@@ -14,8 +14,12 @@ in its frame.
 The hosting differs by platform, and the difference is not something a wrapper
 can paper over:
 
-- **Windows** reparents the guest window into the shell with `SetParent`. The
-  guest is a real child window: it moves, clips and minimizes with the shell.
+- **Windows** makes the guest window an *owned* window of the shell, strips
+  its frame and keeps it over the shell's content area. Owned windows stay
+  above their owner, follow it in the z-order and minimize with it, and the
+  guest is still a top-level window, which Chromium needs before it accepts
+  keyboard input. (Reparenting it as a child looked tidier and silently ate
+  every key press.)
 - **macOS** has no supported way to put another process's window inside yours.
   Claude Desk pins the active guest window over its content area with the
   Accessibility API, hides the others, and re-pins on every move and resize.

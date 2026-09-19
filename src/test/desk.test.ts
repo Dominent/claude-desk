@@ -3,16 +3,12 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { childRect, guestRect, paneRects, sameRect } from '../main/geometry';
+import { guestRect, paneRects, sameRect } from '../main/geometry';
 import { defaultDataDir, ProfileStore, slug } from '../main/profiles';
 import { compareVersionDirs, registeredHandlerExe } from '../main/claudeApp';
 
 test('guest rect sits below the tab bar', () => {
   assert.deepEqual(guestRect({ x: 100, y: 50, width: 800, height: 600 }, 40), { x: 100, y: 90, width: 800, height: 560 });
-});
-
-test('child rect is relative and scaled', () => {
-  assert.deepEqual(childRect({ x: 100, y: 50, width: 800, height: 600 }, 1.5, 40), { x: 0, y: 60, width: 1200, height: 840 });
 });
 
 test('rects never collapse to zero', () => {

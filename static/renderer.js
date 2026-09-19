@@ -40,8 +40,8 @@ function render() {
         }
       });
       tab.append(dot, label, close);
+      tab.dataset.id = g.id;
       tab.addEventListener('click', () => window.desk.activate(g.id));
-      tab.addEventListener('dblclick', () => startRename(tab, label, g));
       tab.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         startRename(tab, label, g);
@@ -54,9 +54,17 @@ function render() {
   renderNotice();
 }
 
-// Double-click or right-click a tab to rename it in place. Enter saves, Escape cancels.
+// The first click of a double-click activates the tab and rebuilds the bar,
+// so the double-click is caught on the bar itself and resolved by id.
+tabList.addEventListener('dblclick', (e) => {
+  const tab = e.target.closest('.tab');
+  const g = tab && state.guests.find((x) => x.id === tab.dataset.id);
+  if (g) startRename(tab, tab.querySelector('span:not(.dot):not(.slot)'), g);
+});
+
+// Rename a tab in place. Enter saves, Escape puts the label back.
 function startRename(tab, label, g) {
-  if (tab.querySelector('input')) return;
+  if (!label || tab.querySelector('input')) return;
   const input = document.createElement('input');
   input.className = 'rename';
   input.value = g.name;
@@ -71,6 +79,7 @@ function startRename(tab, label, g) {
     if (done) return;
     done = true;
     const name = input.value.trim();
+    input.replaceWith(label);
     if (save && name && name !== g.name) {
       try {
         await window.desk.rename(g.id, name);

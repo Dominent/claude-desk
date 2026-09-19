@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { findClaudeExecutable } from './claudeApp';
 import { DeepLinks, forwardUrlWindows } from './deeplink';
-import { childRect, guestRect, paneRects, TAB_BAR_HEIGHT, type Rect } from './geometry';
+import { guestRect, paneRects, TAB_BAR_HEIGHT, type Rect } from './geometry';
 import { Guest, type GuestInfo } from './guest';
 import { createHost, type WindowHost } from './host';
 import { ProfileStore, type Profile } from './profiles';
@@ -229,12 +229,10 @@ class Desk {
   }
 
   private rects(panes: number): Rect[] {
-    const content = this.win.getContentBounds();
-    if (process.platform === 'win32') {
-      const scale = screen.getDisplayMatching(content).scaleFactor;
-      return paneRects(childRect(content, scale, TAB_BAR_HEIGHT), panes);
-    }
-    return paneRects(guestRect(content, TAB_BAR_HEIGHT), panes);
+    const area = guestRect(this.win.getContentBounds(), TAB_BAR_HEIGHT);
+    // Windows hosts want physical pixels; Electron knows each display's scale.
+    const screenArea = process.platform === 'win32' ? screen.dipToScreenRect(this.win, area) : area;
+    return paneRects(screenArea, panes);
   }
 
   private scheduleLayout(): void {

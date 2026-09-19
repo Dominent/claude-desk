@@ -24,7 +24,7 @@ export interface WindowHost {
   hide(win: GuestWindow, pid: number): void;
   // Bring it in front of the shell and give it keyboard focus.
   raise(win: GuestWindow, pid: number): void;
-  // Take keyboard focus back for the shell's own UI.
+  // Take keyboard focus back for the shell's own UI, where clicking it is not enough.
   focusShell?(): void;
   // Ask a running app that has no window to make one (macOS reopen event).
   nudge?(pid: number): boolean;

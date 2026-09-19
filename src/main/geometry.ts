@@ -20,18 +20,6 @@ export function guestRect(content: Rect, tabBar = TAB_BAR_HEIGHT): Rect {
   };
 }
 
-// Same, but relative to the parent's client origin and in physical pixels,
-// which is what a Win32 child window needs.
-export function childRect(content: Rect, scale: number, tabBar = TAB_BAR_HEIGHT): Rect {
-  const r = guestRect({ ...content, x: 0, y: 0 }, tabBar);
-  return {
-    x: Math.round(r.x * scale),
-    y: Math.round(r.y * scale),
-    width: Math.round(r.width * scale),
-    height: Math.round(r.height * scale),
-  };
-}
-
 // Equal columns of the guest area for side-by-side panes.
 export function paneRects(area: Rect, panes: number): Rect[] {
   const n = Math.max(1, panes);
