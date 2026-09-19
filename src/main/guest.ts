@@ -36,6 +36,10 @@ export class Guest {
     private onChange: () => void,
   ) {}
 
+  setName(name: string): void {
+    this.profile.name = name;
+  }
+
   info(): GuestInfo {
     return { id: this.profile.id, name: this.profile.name, state: this.state, pid: this.pid, error: this.error };
   }

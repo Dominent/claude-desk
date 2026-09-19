@@ -142,6 +142,12 @@ class Desk {
     this.broadcast();
   }
 
+  rename(id: string, name: string): void {
+    const profile = this.store.rename(id, name);
+    this.guests.get(id)?.setName(profile.name);
+    this.broadcast();
+  }
+
   stop(id: string): void {
     this.guests.get(id)?.stop();
     this.panes = this.panes.filter((p) => p !== id);
@@ -276,6 +282,7 @@ function createShell(): void {
   ipcMain.handle('desk:activate', (_e, id: string) => desk.activate(String(id)));
   ipcMain.handle('desk:stop', (_e, id: string) => desk.stop(String(id)));
   ipcMain.handle('desk:remove', (_e, id: string) => desk.remove(String(id)));
+  ipcMain.handle('desk:rename', (_e, id: string, name: string) => desk.rename(String(id), String(name)));
   ipcMain.handle('desk:layout', (_e, layout: Layout) => desk.setLayout(layout === 'split' ? 'split' : 'tabs'));
   ipcMain.handle('desk:permission', () => desk.requestPermission());
   ipcMain.handle('desk:focus-shell', () => desk.focusShell());

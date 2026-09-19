@@ -21,6 +21,13 @@ const ShowWindow = user32.func('bool __stdcall ShowWindow(uint64_t hwnd, int cmd
 const SetForegroundWindow = user32.func('bool __stdcall SetForegroundWindow(uint64_t hwnd)');
 const SetFocus = user32.func('uint64_t __stdcall SetFocus(uint64_t hwnd)');
 const IsWindow = user32.func('bool __stdcall IsWindow(uint64_t hwnd)');
+const GetParent = user32.func('uint64_t __stdcall GetParent(uint64_t hwnd)');
+const GetFocus = user32.func('uint64_t __stdcall GetFocus()');
+const AttachThreadInput = user32.func('bool __stdcall AttachThreadInput(uint32_t attach, uint32_t to, bool flag)');
+const GetAsyncKeyState = user32.func('int16_t __stdcall GetAsyncKeyState(int vk)');
+// POINT is 8 bytes and travels in one register on every 64-bit Windows ABI.
+const WindowFromPoint = user32.func('uint64_t __stdcall WindowFromPoint(uint64_t point)');
+const GetCursorPosRaw = user32.func('bool __stdcall GetCursorPos(_Out_ int32_t *point)');
 
 const GW_HWNDNEXT = 2;
 const GWL_STYLE = -16;
@@ -41,14 +48,56 @@ const SW_SHOW = 5;
 const SW_RESTORE = 9;
 
 const CHROMIUM_CLASS = 'Chrome_WidgetWin_1';
+const VK_LBUTTON = 1;
+const VK_RBUTTON = 2;
+const CLICK_POLL_MS = 40;
+
+function threadOf(hwnd: bigint): number {
+  const pid: number[] = [0];
+  return GetWindowThreadProcessId(hwnd, pid);
+}
+
+function cursorPoint(): bigint | undefined {
+  const pt = [0, 0];
+  if (!GetCursorPosRaw(pt)) return undefined;
+  return (BigInt(pt[1] >>> 0) << 32n) | BigInt(pt[0] >>> 0);
+}
 
 export class WinHost implements WindowHost {
   private shell = 0n;
-  // Physical pixels per point of the display the shell is on.
-  scale = 1;
+  private attached = new Set<bigint>();
+  private clickWatch?: NodeJS.Timeout;
+  private buttonWasDown = false;
 
   setShellHandle(handle: Buffer): void {
     this.shell = handle.readBigUInt64LE(0);
+  }
+
+  // A guest is a child window owned by another thread. Windows joins the input
+  // queues when SetParent crosses threads, but nothing moves keyboard focus into
+  // the child when it is clicked, because a child is never "activated". So the
+  // mouse is watched: a button press over a guest sends focus to that guest.
+  private watchClicks(): void {
+    if (this.clickWatch) return;
+    this.clickWatch = setInterval(() => {
+      const down = (GetAsyncKeyState(VK_LBUTTON) | GetAsyncKeyState(VK_RBUTTON)) & 0x8000;
+      const pressed = !!down && !this.buttonWasDown;
+      this.buttonWasDown = !!down;
+      if (!pressed || this.attached.size === 0) return;
+      const pt = cursorPoint();
+      if (pt === undefined) return;
+      const guest = this.guestAt(WindowFromPoint(pt));
+      if (guest && GetFocus() !== guest) SetFocus(guest);
+    }, CLICK_POLL_MS);
+  }
+
+  // The attached guest that owns `hwnd`, which may be one of Chromium's inner windows.
+  private guestAt(hwnd: bigint): bigint | undefined {
+    for (let h = hwnd; h; h = GetParent(h)) {
+      if (this.attached.has(h)) return h;
+      if (h === this.shell) return undefined;
+    }
+    return undefined;
   }
 
   ready(): boolean {
@@ -78,10 +127,15 @@ export class WinHost implements WindowHost {
     SetWindowLongPtrW(hwnd, GWL_STYLE, (style & ~TOP_LEVEL_STYLES) | WS_CHILD);
     SetParent(hwnd, this.shell);
     SetWindowPos(hwnd, 0n, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+    AttachThreadInput(threadOf(hwnd), threadOf(this.shell), true);
+    this.attached.add(hwnd);
+    this.watchClicks();
   }
 
   detach(win: GuestWindow): void {
     const hwnd = win as bigint;
+    this.attached.delete(hwnd);
+    AttachThreadInput(threadOf(hwnd), threadOf(this.shell), false);
     const style = BigInt(GetWindowLongPtrW(hwnd, GWL_STYLE));
     SetWindowLongPtrW(hwnd, GWL_STYLE, (style & ~WS_CHILD) | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
     SetParent(hwnd, 0n);

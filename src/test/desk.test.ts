@@ -45,8 +45,11 @@ test('profile store round-trips and rejects duplicates', () => {
   const p = store.add('Work', path.join(dir, 'data'));
   assert.equal(p.id, 'work');
   assert.throws(() => store.add('work'));
+  assert.equal(store.rename('work', ' Work laptop ').name, 'Work laptop');
+  assert.equal(store.get('work')?.dataDir, path.join(dir, 'data'));
+  assert.throws(() => store.rename('work', '  '));
   const again = new ProfileStore(file);
-  assert.deepEqual(again.list(), [p]);
+  assert.deepEqual(again.list(), [{ ...p, name: 'Work laptop' }]);
   again.remove('work');
   assert.deepEqual(new ProfileStore(file).list(), []);
 });

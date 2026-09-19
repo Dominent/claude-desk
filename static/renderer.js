@@ -41,12 +41,53 @@ function render() {
       });
       tab.append(dot, label, close);
       tab.addEventListener('click', () => window.desk.activate(g.id));
+      tab.addEventListener('dblclick', () => startRename(tab, label, g));
+      tab.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        startRename(tab, label, g);
+      });
       return tab;
     }),
   );
   splitButton.classList.toggle('on', state.layout === 'split');
   content.classList.toggle('half', state.layout === 'split' && state.panes.length === 1);
   renderNotice();
+}
+
+// Double-click or right-click a tab to rename it in place. Enter saves, Escape cancels.
+function startRename(tab, label, g) {
+  if (tab.querySelector('input')) return;
+  const input = document.createElement('input');
+  input.className = 'rename';
+  input.value = g.name;
+  input.maxLength = 32;
+  label.replaceWith(input);
+  window.desk.focusShell().then(() => {
+    input.focus();
+    input.select();
+  });
+  let done = false;
+  const finish = async (save) => {
+    if (done) return;
+    done = true;
+    const name = input.value.trim();
+    if (save && name && name !== g.name) {
+      try {
+        await window.desk.rename(g.id, name);
+        return;
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+    render();
+  };
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') finish(true);
+    if (e.key === 'Escape') finish(false);
+    e.stopPropagation();
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.addEventListener('click', (e) => e.stopPropagation());
 }
 
 function renderNotice() {

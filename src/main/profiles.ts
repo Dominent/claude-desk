@@ -55,6 +55,17 @@ export class ProfileStore {
     return profile;
   }
 
+  // Only the label changes; the id and the data directory stay.
+  rename(id: string, name: string): Profile {
+    const profile = this.get(id);
+    if (!profile) throw new Error(`no profile "${id}"`);
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error('a profile needs a name');
+    profile.name = trimmed;
+    this.save();
+    return { ...profile };
+  }
+
   remove(id: string): void {
     this.profiles = this.profiles.filter((p) => p.id !== id);
     this.save();

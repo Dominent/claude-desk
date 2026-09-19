@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('desk', {
   activate: (id: string) => ipcRenderer.invoke('desk:activate', id),
   stop: (id: string) => ipcRenderer.invoke('desk:stop', id),
   remove: (id: string) => ipcRenderer.invoke('desk:remove', id),
+  rename: (id: string, name: string) => ipcRenderer.invoke('desk:rename', id, name),
   setLayout: (layout: string) => ipcRenderer.invoke('desk:layout', layout),
   requestPermission: () => ipcRenderer.invoke('desk:permission'),
   focusShell: () => ipcRenderer.invoke('desk:focus-shell'),

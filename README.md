@@ -45,7 +45,8 @@ npm start
 ```
 
 Press `+`, type a profile name, and the app starts on a fresh directory with
-Claude's sign-in screen. **Split** shows two profiles side by side; in split
+Claude's sign-in screen. Double-click or right-click a tab to rename it; the
+directory on disk keeps its original name. **Split** shows two profiles side by side; in split
 layout, clicking a tab fills the free half, or replaces the half that is not
 focused.
 
