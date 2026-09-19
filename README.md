@@ -123,4 +123,7 @@ Produces a DMG on macOS and an NSIS installer on Windows under `release/`.
   relaunches itself; Switchboard follows the new process.
 - The shared `~/.claude` directory (settings, memory, session history) is
   common to all profiles. Only the sign-in differs.
-- The Dock or taskbar shows one Claude icon per instance, as the OS sees them.
+- On macOS the Dock shows one Claude icon per instance, as the OS sees them.
+  On Windows the instances have no taskbar buttons of their own, but the
+  taskbar thumbnail shows an empty Switchboard frame, because the instances
+  are separate windows that Windows does not composite into it.

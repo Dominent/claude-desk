@@ -48,4 +48,6 @@ window.desk.info().then((info) => {
   row(about, 'Claude desktop app', info.claudeExe || 'not found (set CLAUDE_DESK_APP)', true);
   row(about, 'Profiles file', info.profilesFile, true);
   row(about, 'Source', 'github.com/Dominent/claude-desk');
+  // Fit the window to what was actually laid out, rather than a guessed height.
+  requestAnimationFrame(() => window.desk.fit(document.documentElement.scrollHeight));
 });

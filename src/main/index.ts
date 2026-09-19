@@ -243,7 +243,8 @@ class Desk {
       width: 580,
       height: 700,
       minWidth: 440,
-      minHeight: 400,
+      minHeight: 320,
+      useContentSize: true,
       parent: this.win,
       // The guests sit above the shell, so the settings window must float above them.
       alwaysOnTop: true,
@@ -400,6 +401,14 @@ function createShell(): void {
   ipcMain.handle('desk:focus-shell', () => desk.focusShell());
   ipcMain.handle('desk:settings', () => desk.openSettings());
   ipcMain.handle('desk:info', () => desk.info());
+  // The settings page reports how tall its content is, so the window fits it
+  // exactly whatever the platform's font metrics turn out to be.
+  ipcMain.handle('desk:fit', (e, height: number) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    if (!win || win.isDestroyed()) return;
+    const [w] = win.getContentSize();
+    win.setContentSize(w, Math.min(Math.max(Math.ceil(height), 320), 900));
+  });
 
   deepLinks = new DeepLinks((url) => desk.deliverUrl(url));
   deepLinks.install();
@@ -420,6 +429,9 @@ const APP_NAME = 'Switchboard';
 // still show Electron's own bundle name; scripts/dev-mac-setup.sh fixes that.
 app.setName(APP_NAME);
 app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion() });
+// Windows groups taskbar buttons, jump lists and toasts by this id; without
+// it a development build still calls itself Electron in those places.
+app.setAppUserModelId('dev.dominent.switchboard');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('desk', {
   focusShell: () => ipcRenderer.invoke('desk:focus-shell'),
   openSettings: () => ipcRenderer.invoke('desk:settings'),
   info: () => ipcRenderer.invoke('desk:info'),
+  fit: (height: number) => ipcRenderer.invoke('desk:fit', height),
   onState: (cb: (state: unknown) => void) => {
     ipcRenderer.on('desk:state', (_e, state) => cb(state));
   },
