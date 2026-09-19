@@ -7,6 +7,7 @@ import { guestRect, paneRects, TAB_BAR_HEIGHT, type Rect } from './geometry';
 import { findGuestPid, Guest, type GuestInfo } from './guest';
 import { createHost, type WindowHost } from './host';
 import { ProfileStore, type Profile } from './profiles';
+import { LinkWatcher } from './linkWatch';
 import { Shortcuts } from './shortcuts';
 
 export type Layout = 'tabs' | 'split';
@@ -263,9 +264,12 @@ class Desk {
   }
 
   // A claude:// URL (the sign-in callback) goes to the focused instance.
-  deliverUrl(url: string): void {
+  // `seenAtDefault` marks a URL Windows already gave the default Claude profile
+  // (see LinkWatcher); with no running tab there is nothing more to do for it.
+  deliverUrl(url: string, seenAtDefault = false): void {
     const guest = this.active ? this.guests.get(this.active) : undefined;
-    console.log(`[desk] ${url.split('?')[0]} -> ${guest?.profile.id ?? 'no active profile'}`);
+    const target = guest?.pid ? guest.profile.id : seenAtDefault ? 'left with the default Claude' : 'no active profile';
+    console.log(`[desk] ${url.split('?')[0]} -> ${target}`);
     if (!guest?.pid) return;
     if (process.platform === 'darwin') {
       (this.host as unknown as { sendUrl(pid: number, url: string): boolean }).sendUrl(guest.pid, url);
@@ -434,6 +438,10 @@ function createShell(): void {
 
   deepLinks = new DeepLinks((url) => desk.deliverUrl(url));
   deepLinks.install();
+  // Windows: the sign-in callback reaches the default Claude profile whatever
+  // we register; pick it up from there and hand it to the tab signing in.
+  linkWatcher = new LinkWatcher((url) => desk.deliverUrl(url, true));
+  linkWatcher.start();
 
   win.loadFile(path.join(app.getAppPath(), 'static', 'index.html')).then(() => {
     app.focus({ steal: true });
@@ -444,6 +452,7 @@ function createShell(): void {
 }
 
 let deepLinks: DeepLinks | undefined;
+let linkWatcher: LinkWatcher | undefined;
 
 const APP_NAME = 'Switchboard';
 // Before anything reads it: the user data folder, the taskbar and the about
@@ -460,5 +469,8 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   app.whenReady().then(createShell);
   app.on('window-all-closed', () => app.quit());
-  app.on('will-quit', () => deepLinks?.uninstall());
+  app.on('will-quit', () => {
+    linkWatcher?.stop();
+    deepLinks?.uninstall();
+  });
 }

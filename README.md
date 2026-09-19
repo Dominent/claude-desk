@@ -67,11 +67,20 @@ Shortcuts, active only while Switchboard or one of its instances is in front:
 | Ctrl+Tab / Ctrl+Shift+Tab | Next / previous tab |
 | Ctrl+Alt+Left / Right | Focus the left / right pane in split layout |
 
-Sign-in works per tab. While Switchboard runs it owns the `claude://` scheme
-(and re-claims it whenever a freshly started instance grabs it back), so on
-macOS each instance uses an in-process auth session whose callback cannot go
-astray, and on Windows the callback reaches Switchboard, which hands it to the
-focused instance. The previous handler is restored on quit.
+Sign-in works per tab. On macOS, while Switchboard runs it owns the
+`claude://` scheme (and re-claims it whenever a freshly started instance grabs
+it back), so each instance uses an in-process auth session whose callback
+cannot go astray. The previous handler is restored on quit.
+
+On Windows, Google sign-in returns from the browser through a `claude://`
+link, and current Claude builds are MSIX packages that declare that scheme
+themselves: Windows then gives every such link to Claude's default profile,
+and offers no other app for it. Switchboard therefore watches for the Claude
+process Windows starts for a link (a WMI process-creation event, no admin
+rights, nothing registered) and hands the same URL to the focused tab. The
+default profile ignores its copy. If your default Claude is not running, that
+link starts it, so expect its window to open during a tab's sign-in.
+**Continue with email** needs no link at all.
 
 A profile made by hand (or by the `claude-profile` script) is picked up if its
 directory already exists. An instance that is already running on a profile is
