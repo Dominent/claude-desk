@@ -11,14 +11,28 @@ files:
 protocols:
   - name: Claude sign-in link
     schemes: [claude]
+# Task Manager and "Open with" show FileDescription, which electron-builder
+# stamps from the description: keep that one short and put the sentence on the
+# gallery instead.
+extraMetadata:
+  description: Switchboard
 asarUnpack:
   - node_modules/koffi/**
 mac:
   category: public.app-category.developer-tools
   target: [dmg]
+  artifactName: ${productName}-${version}.${ext}
   identity: null
+  # koffi ships prebuilds for 18 platforms; carry only the ones that can run.
+  files:
+    - "!node_modules/koffi/build/koffi/!(darwin_*)/**"
 win:
   target: [nsis]
+  files:
+    - "!node_modules/koffi/build/koffi/!(win32_*)/**"
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  # No spaces: GitHub turns them into dots in a release asset name, and then
+  # the updater's latest.yml would point at a file name that does not exist.
+  artifactName: ${productName}-Setup-${version}.${ext}

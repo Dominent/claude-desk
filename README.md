@@ -115,6 +115,12 @@ npm run dist
 
 Produces a DMG on macOS and an NSIS installer on Windows under `release/`.
 
+On Windows the first build unpacks electron-builder's code-signing tools,
+which contain macOS symlinks. Creating those needs a privilege a normal
+account lacks, and the build fails with "A required privilege is not held by
+the client". Turn on Developer Mode in Windows settings, or run the build once
+from an elevated shell.
+
 ## Limits
 
 - Closing Switchboard leaves the instances running as ordinary Claude

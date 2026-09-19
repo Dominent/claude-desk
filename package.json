@@ -5,7 +5,8 @@
   "main": "dist/main/index.js",
   "private": true,
   "license": "MIT",
-  "engines": { "node": ">=20 <23" },
+  "author": "Dominent",
+  "engines": { "node": ">=20" },
   "repository": "github:Dominent/claude-desk",
   "scripts": {
     "build": "tsc -p tsconfig.json",

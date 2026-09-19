@@ -388,6 +388,17 @@ function createShell(): void {
   });
   win.setMenuBarVisibility(false);
   if (process.platform === 'darwin' && !app.isPackaged) app.dock?.setIcon(path.join(app.getAppPath(), 'build', 'icon.png'));
+  if (process.platform === 'win32') {
+    // Without a Start-menu shortcut carrying our id, the taskbar header falls
+    // back to the executable's description, which in development is Electron.
+    win.setAppDetails({
+      appId: 'dev.dominent.switchboard',
+      appIconPath: path.join(app.getAppPath(), 'build', 'icon.ico'),
+      appIconIndex: 0,
+      relaunchCommand: `"${process.execPath}" "${app.getAppPath()}"`,
+      relaunchDisplayName: APP_NAME,
+    });
+  }
   const desk = new Desk(win);
 
   ipcMain.handle('desk:state', () => desk.state());
