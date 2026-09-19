@@ -34,6 +34,8 @@ export class Guest {
     private host: WindowHost,
     private exe: string,
     private onChange: () => void,
+    // Pids other guests already own, so two tabs never share one instance.
+    private takenPids: () => number[] = () => [],
   ) {}
 
   setName(name: string): void {
@@ -53,7 +55,7 @@ export class Guest {
 
     // An instance someone launched by hand on this profile is adopted, not duplicated:
     // the app takes no single-instance lock on macOS.
-    const existing = findGuestPid(this.profile.dataDir);
+    const existing = this.freeGuestPid();
     if (existing) {
       this.pid = existing;
     } else {
@@ -153,7 +155,7 @@ export class Guest {
     this.clearPoll();
     // The app relaunches itself after an update; if the profile is still up
     // under a new pid, follow it instead of reporting a stop.
-    const successor = findGuestPid(this.profile.dataDir);
+    const successor = this.freeGuestPid();
     if (successor) {
       this.pid = successor;
       this.window = undefined;
@@ -166,6 +168,11 @@ export class Guest {
     this.pid = undefined;
     this.state = 'stopped';
     this.onChange();
+  }
+
+  private freeGuestPid(): number | undefined {
+    const taken = new Set(this.takenPids());
+    return findGuestPids(this.profile.dataDir).find((p) => !taken.has(p));
   }
 
   private fail(message: string): void {
@@ -181,27 +188,42 @@ export class Guest {
   }
 }
 
-// The pid of a Claude main process already running on this data directory.
-export function findGuestPid(dataDir: string): number | undefined {
+// Claude main processes already running on exactly this data directory. The
+// directory must end the argument: "Claude-test" is a prefix of "Claude-test2".
+export function findGuestPids(dataDir: string): number[] {
   try {
     if (process.platform === 'darwin') {
       const out = execFileSync('pgrep', ['-f', `Contents/MacOS/Claude --user-data-dir=${dataDir}( |$)`], { encoding: 'utf8' });
-      const pid = Number(out.split('\n')[0]);
-      return pid > 0 ? pid : undefined;
+      return parsePids(out);
     }
     if (process.platform === 'win32') {
+      const pattern = `--user-data-dir=${escapeRegex(dataDir)}("|\\s|$)`;
       const script =
         `Get-CimInstance Win32_Process -Filter "Name='Claude.exe' OR Name='claude.exe'" | ` +
-        `Where-Object { $_.CommandLine -like '*--user-data-dir=${dataDir.replace(/'/g, "''")}*' -and $_.CommandLine -notlike '*--type=*' } | ` +
-        `Select-Object -First 1 -ExpandProperty ProcessId`;
-      const out = execFileSync('powershell', ['-NoProfile', '-Command', script], { encoding: 'utf8' });
-      const pid = Number(out.trim());
-      return pid > 0 ? pid : undefined;
+        `Where-Object { $_.CommandLine -match '${pattern.replace(/'/g, "''")}' -and $_.CommandLine -notlike '*--type=*' } | ` +
+        `Select-Object -ExpandProperty ProcessId`;
+      const out = execFileSync('powershell', ['-NoProfile', '-Command', script], { encoding: 'utf8', windowsHide: true });
+      return parsePids(out);
     }
   } catch {
     // pgrep exits 1 when nothing matches
   }
-  return undefined;
+  return [];
+}
+
+export function findGuestPid(dataDir: string): number | undefined {
+  return findGuestPids(dataDir)[0];
+}
+
+function parsePids(out: string): number[] {
+  return out
+    .split(/\r?\n/)
+    .map((l) => Number(l.trim()))
+    .filter((n) => n > 0);
+}
+
+export function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function killTree(pid: number): void {

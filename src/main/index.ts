@@ -187,7 +187,12 @@ class Desk {
   }
 
   private makeGuest(profile: Profile): Guest {
-    return new Guest(profile, this.host, this.exe ?? '', () => {
+    const taken = () => [...this.guests.values()].filter((g) => g.profile.id !== profile.id && g.pid).map((g) => g.pid!);
+    return new Guest(
+      profile,
+      this.host,
+      this.exe ?? '',
+      () => {
       // A guest that just got its window needs placing; others only need the UI refreshed.
       const g = this.guests.get(profile.id);
       if (g && this.panes.includes(profile.id) && g.state === 'running') {
@@ -199,7 +204,9 @@ class Desk {
         }, 500);
       }
       this.broadcast();
-    });
+      },
+      taken,
+    );
   }
 
   private eachPane(fn: (g: Guest, index: number) => void): void {

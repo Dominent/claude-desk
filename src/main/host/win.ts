@@ -101,7 +101,9 @@ export class WinHost implements WindowHost {
   layout(win: GuestWindow, rect: Rect): boolean {
     const hwnd = win as bigint;
     if (!IsWindow(hwnd)) return false;
-    return SetWindowPos(hwnd, 0n, rect.x, rect.y, rect.width, rect.height, SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(hwnd, 0n, rect.x, rect.y, rect.width, rect.height, SWP_NOZORDER | SWP_NOACTIVATE);
+    // Only a window that is gone counts as lost; a hidden one could never be found again.
+    return IsWindow(hwnd);
   }
 
   show(win: GuestWindow): void {

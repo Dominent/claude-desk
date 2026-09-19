@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import { guestRect, paneRects, sameRect } from '../main/geometry';
 import { defaultDataDir, ProfileStore, slug } from '../main/profiles';
 import { compareVersionDirs, registeredHandlerExe } from '../main/claudeApp';
+import { escapeRegex } from '../main/guest';
 
 test('guest rect sits below the tab bar', () => {
   assert.deepEqual(guestRect({ x: 100, y: 50, width: 800, height: 600 }, 40), { x: 100, y: 90, width: 800, height: 560 });
@@ -62,4 +63,12 @@ test('pane rects tile the area without gaps or overlap', () => {
   assert.equal(b.x + b.width, 1011);
   assert.equal(a.height, 500);
   assert.equal(paneRects({ x: 0, y: 0, width: 100, height: 10 }, 1)[0].width, 100);
+});
+
+test('a data directory is matched whole, not as a prefix', () => {
+  const dir = 'C:\\Users\\x\\AppData\\Roaming\\Claude-test';
+  const re = new RegExp(`--user-data-dir=${escapeRegex(dir)}("|\\s|$)`);
+  assert.ok(re.test(`"C:\\Claude.exe" --user-data-dir=${dir}`));
+  assert.ok(re.test(`"C:\\Claude.exe" "--user-data-dir=${dir}" --flag`));
+  assert.ok(!re.test(`"C:\\Claude.exe" --user-data-dir=${dir}2`));
 });
