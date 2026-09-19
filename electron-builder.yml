@@ -8,6 +8,8 @@ files:
   - static/**
   - build/icon.png
   - package.json
+  - "!scripts/**"
+  - "!**/*.map"
 protocols:
   - name: Claude sign-in link
     schemes: [claude]

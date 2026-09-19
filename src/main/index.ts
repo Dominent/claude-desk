@@ -391,11 +391,15 @@ function createShell(): void {
   if (process.platform === 'win32') {
     // Without a Start-menu shortcut carrying our id, the taskbar header falls
     // back to the executable's description, which in development is Electron.
+    // A packaged build names its own exe instead: the shell cannot read an
+    // icon out of app.asar, and relaunch must not carry the app path as an
+    // argument, or anything pinned to the taskbar starts with a stray one.
+    const packaged = app.isPackaged;
     win.setAppDetails({
       appId: 'dev.dominent.switchboard',
-      appIconPath: path.join(app.getAppPath(), 'build', 'icon.ico'),
+      appIconPath: packaged ? process.execPath : path.join(app.getAppPath(), 'build', 'icon.ico'),
       appIconIndex: 0,
-      relaunchCommand: `"${process.execPath}" "${app.getAppPath()}"`,
+      relaunchCommand: packaged ? `"${process.execPath}"` : `"${process.execPath}" "${app.getAppPath()}"`,
       relaunchDisplayName: APP_NAME,
     });
   }

@@ -1,6 +1,6 @@
 {
   "name": "switchboard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "One window, several Claude accounts: hosts a real Claude desktop instance per profile, in tabs or side by side",
   "main": "dist/main/index.js",
   "private": true,
