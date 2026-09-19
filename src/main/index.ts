@@ -198,6 +198,12 @@ class Desk {
     this.broadcast();
   }
 
+  // Quit an instance and start a fresh one on the same profile.
+  restart(id: string): void {
+    this.guests.get(id)?.stop();
+    this.activate(id);
+  }
+
   stop(id: string): void {
     this.guests.get(id)?.stop();
     this.panes = this.panes.filter((p) => p !== id);
@@ -410,6 +416,7 @@ function createShell(): void {
   ipcMain.handle('desk:activate', (_e, id: string) => desk.activate(String(id)));
   ipcMain.handle('desk:stop', (_e, id: string) => desk.stop(String(id)));
   ipcMain.handle('desk:remove', (_e, id: string) => desk.remove(String(id)));
+  ipcMain.handle('desk:restart', (_e, id: string) => desk.restart(String(id)));
   ipcMain.handle('desk:rename', (_e, id: string, name: string) => desk.rename(String(id), String(name)));
   ipcMain.handle('desk:layout', (_e, layout: Layout) => desk.setLayout(layout === 'split' ? 'split' : 'tabs'));
   ipcMain.handle('desk:permission', () => desk.requestPermission());

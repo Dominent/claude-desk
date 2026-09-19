@@ -159,11 +159,11 @@ function renderNotice() {
     h.textContent = `Starting ${active.name}…`;
     p.textContent = 'The Claude window appears here in a moment.';
   } else if (active.state === 'error') {
-    h.textContent = `${active.name} failed to start`;
-    p.textContent = active.error || '';
+    h.textContent = `${active.name} did not open`;
+    p.textContent = (active.error || '') + '. Restarting quits that Claude and starts a fresh one on the same profile.';
     const b = document.createElement('button');
-    b.textContent = 'Try again';
-    b.addEventListener('click', () => window.desk.activate(active.id));
+    b.textContent = 'Restart it';
+    b.addEventListener('click', () => window.desk.restart(active.id));
     notice.append(h, p, b);
     return;
   } else if (active.state === 'stopped') {

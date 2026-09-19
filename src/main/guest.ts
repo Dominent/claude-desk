@@ -13,10 +13,13 @@ export interface GuestInfo {
   state: GuestState;
   pid?: number;
   error?: string;
+  adopted?: boolean;
 }
 
 const WINDOW_POLL_MS = 250;
-const WINDOW_WAIT_MS = 90_000;
+// Long enough for a cold start on a slow disk, short enough that a broken
+// instance does not leave the tab saying "Starting" for a minute and a half.
+const WINDOW_WAIT_MS = 30_000;
 
 // One running Claude desktop instance: its process, its main window, and where
 // that window currently sits.
@@ -26,6 +29,8 @@ export class Guest {
   error?: string;
   window?: GuestWindow;
   private lastRect?: Rect;
+  // True when this instance was already running before we attached to it.
+  private adopted = false;
   private poll?: NodeJS.Timeout;
   private visible = false;
 
@@ -43,7 +48,7 @@ export class Guest {
   }
 
   info(): GuestInfo {
-    return { id: this.profile.id, name: this.profile.name, state: this.state, pid: this.pid, error: this.error };
+    return { id: this.profile.id, name: this.profile.name, state: this.state, pid: this.pid, error: this.error, adopted: this.adopted };
   }
 
   start(): void {
@@ -58,12 +63,14 @@ export class Guest {
     const existing = this.freeGuestPid();
     if (existing) {
       this.pid = existing;
+      this.adopted = true;
     } else {
       const child = spawn(this.exe, [`--user-data-dir=${this.profile.dataDir}`], { detached: true, stdio: 'ignore' });
       child.unref();
       child.on('error', (err) => this.fail(err.message));
       child.on('exit', () => this.onExit(child.pid));
       this.pid = child.pid;
+      this.adopted = false;
     }
     this.state = 'starting';
     this.onChange();
@@ -145,7 +152,9 @@ export class Guest {
         this.onChange();
       } else if (Date.now() - started > WINDOW_WAIT_MS) {
         this.clearPoll();
-        this.fail('the Claude window never appeared');
+        // A process can outlive its window and stop answering the reopen
+        // event; restarting it is the only way back, and that is the user's call.
+        this.fail(this.adopted ? 'that instance is running but has no window' : 'the Claude window never appeared');
       }
     }, WINDOW_POLL_MS);
   }
