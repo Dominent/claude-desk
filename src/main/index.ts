@@ -240,8 +240,8 @@ class Desk {
     if (this.settings && !this.settings.isDestroyed()) return this.settings.focus();
     const dark = nativeTheme.shouldUseDarkColors;
     this.settings = new BrowserWindow({
-      width: 560,
-      height: 620,
+      width: 580,
+      height: 700,
       minWidth: 440,
       minHeight: 400,
       parent: this.win,
@@ -347,21 +347,24 @@ class Desk {
   }
 }
 
-const APP_NAME = 'Switchboard';
-
 // Profiles used to live under the old app name; carry them over once.
 function migrateUserData(): void {
   const here = app.getPath('userData');
-  const old = path.join(path.dirname(here), 'claude-desk');
-  if (fs.existsSync(path.join(here, 'profiles.json')) || !fs.existsSync(old)) return;
-  fs.mkdirSync(here, { recursive: true });
-  for (const f of ['profiles.json', 'state.json']) {
-    if (fs.existsSync(path.join(old, f))) fs.copyFileSync(path.join(old, f), path.join(here, f));
+  if (fs.existsSync(path.join(here, 'profiles.json'))) return;
+  // 'claude-desk' was the old app name, 'switchboard' the package name used
+  // before the app named itself; on a case-sensitive volume they differ.
+  for (const name of ['claude-desk', 'switchboard']) {
+    const old = path.join(path.dirname(here), name);
+    if (old === here || !fs.existsSync(path.join(old, 'profiles.json'))) continue;
+    fs.mkdirSync(here, { recursive: true });
+    for (const f of ['profiles.json', 'state.json']) {
+      if (fs.existsSync(path.join(old, f))) fs.copyFileSync(path.join(old, f), path.join(here, f));
+    }
+    return;
   }
 }
 
 function createShell(): void {
-  app.setName(APP_NAME);
   migrateUserData();
   const dark = nativeTheme.shouldUseDarkColors;
   const win = new BrowserWindow({
@@ -410,6 +413,13 @@ function createShell(): void {
 }
 
 let deepLinks: DeepLinks | undefined;
+
+const APP_NAME = 'Switchboard';
+// Before anything reads it: the user data folder, the taskbar and the about
+// panel all take the name from here. In development the Dock and the menu bar
+// still show Electron's own bundle name; scripts/dev-mac-setup.sh fixes that.
+app.setName(APP_NAME);
+app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: app.getVersion() });
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

@@ -7,7 +7,8 @@ table { width: 100%; border-collapse: collapse; }
 td { padding: 7px 0; border-top: 1px solid var(--bar-line); vertical-align: top; }
 tr:first-child td { border-top: 0; }
 td:first-child { width: 42%; color: var(--text); white-space: nowrap; }
-td:last-child { color: var(--muted); word-break: break-all; }
+td:last-child { color: var(--muted); }
+td.path { overflow-wrap: anywhere; }
 kbd {
   font: inherit;
   font-size: 12px;

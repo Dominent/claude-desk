@@ -77,6 +77,24 @@ A profile made by hand (or by the `claude-profile` script) is picked up if its
 directory already exists. An instance that is already running on a profile is
 adopted rather than duplicated.
 
+## Development
+
+```bash
+npm install
+npm start          # not `npx electron .`: npx renames the process
+```
+
+On macOS, run this once so the dev build carries its own name and can claim
+the sign-in scheme. It edits and re-signs the Electron binary inside
+`node_modules`, and packaged builds need none of it.
+
+```bash
+./scripts/dev-mac-setup.sh
+```
+
+Without it the Dock, the menu bar and the about panel say "Electron", and
+`claude://` links go to the Claude app instead of Switchboard.
+
 ## Icon
 
 `build/icon.png` is rendered from `build/icon.svg`:

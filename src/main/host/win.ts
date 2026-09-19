@@ -19,6 +19,7 @@ const GetWindowThreadProcessId = user32.func('uint32_t __stdcall GetWindowThread
 const IsWindowVisible = user32.func('bool __stdcall IsWindowVisible(uint64_t hwnd)');
 const IsWindow = user32.func('bool __stdcall IsWindow(uint64_t hwnd)');
 const GetClassNameW = user32.func('int __stdcall GetClassNameW(uint64_t hwnd, _Out_ char16_t *buf, int max)');
+const GetWindowTextLengthW = user32.func('int __stdcall GetWindowTextLengthW(uint64_t hwnd)');
 const GetWindowLongPtrW = user32.func('int64_t __stdcall GetWindowLongPtrW(uint64_t hwnd, int index)');
 const SetWindowLongPtrW = user32.func('int64_t __stdcall SetWindowLongPtrW(uint64_t hwnd, int index, int64_t value)');
 const SetWindowPos = user32.func('bool __stdcall SetWindowPos(uint64_t hwnd, uint64_t after, int x, int y, int w, int h, uint32_t flags)');
@@ -46,6 +47,7 @@ const SWP_NOZORDER = 0x0004;
 const SWP_NOACTIVATE = 0x0010;
 const SWP_FRAMECHANGED = 0x0020;
 const SW_HIDE = 0;
+const SW_SHOW = 5;
 const SW_SHOWNA = 8;
 const SW_RESTORE = 9;
 
@@ -53,6 +55,9 @@ const CHROMIUM_CLASS = 'Chrome_WidgetWin_1';
 
 export class WinHost implements WindowHost {
   private shell = 0n;
+  // Windows adopted from an earlier shell keep painting at their old size
+  // until a real WM_SIZE arrives; their first layout forces one.
+  private needsResize = new Set<bigint>();
 
   setShellHandle(handle: Buffer): void {
     this.shell = handle.readBigUInt64LE(0);
@@ -64,17 +69,22 @@ export class WinHost implements WindowHost {
 
   requestPermission(): void {}
 
+  // A guest left hidden by a previous shell still counts: it is the same
+  // window, and refusing it would strand the instance forever. Chromium's
+  // hidden helper windows share the class but carry no title.
   findWindow(pid: number): GuestWindow | undefined {
+    let hidden: bigint | undefined;
     for (let hwnd = GetTopWindow(0n); hwnd; hwnd = GetWindow(hwnd, GW_HWNDNEXT)) {
-      if (!IsWindowVisible(hwnd)) continue;
       const out: number[] = [0];
       GetWindowThreadProcessId(hwnd, out);
       if (out[0] !== pid) continue;
       const buf = Buffer.alloc(128);
       const n = GetClassNameW(hwnd, buf, 64);
-      if (koffi.decode(buf, 'char16_t', n) === CHROMIUM_CLASS) return hwnd;
+      if (koffi.decode(buf, 'char16_t', n) !== CHROMIUM_CLASS) continue;
+      if (IsWindowVisible(hwnd)) return hwnd;
+      if (!hidden && GetWindowTextLengthW(hwnd) > 0) hidden = hwnd;
     }
-    return undefined;
+    return hidden;
   }
 
   attach(win: GuestWindow): void {
@@ -86,23 +96,33 @@ export class WinHost implements WindowHost {
     SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (ex & ~WS_EX_APPWINDOW) | WS_EX_TOOLWINDOW);
     SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, this.shell);
     SetWindowPos(hwnd, 0n, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    this.needsResize.add(hwnd);
   }
 
   detach(win: GuestWindow): void {
     const hwnd = win as bigint;
+    this.needsResize.delete(hwnd);
     SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, 0n);
     const style = BigInt(GetWindowLongPtrW(hwnd, GWL_STYLE));
     SetWindowLongPtrW(hwnd, GWL_STYLE, (style & ~WS_POPUP) | FRAME_STYLES);
     const ex = BigInt(GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
     SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (ex & ~WS_EX_TOOLWINDOW) | WS_EX_APPWINDOW);
     SetWindowPos(hwnd, 0n, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+    // A guest whose tab was inactive is hidden; leaving it that way would
+    // strand a running Claude with no window and no taskbar button.
     ShowWindow(hwnd, SW_RESTORE);
+    if (!IsWindowVisible(hwnd)) ShowWindow(hwnd, SW_SHOW);
   }
 
   // `rect` is in physical screen pixels.
   layout(win: GuestWindow, rect: Rect): boolean {
     const hwnd = win as bigint;
     if (!IsWindow(hwnd)) return false;
+    if (this.needsResize.delete(hwnd)) {
+      // One pixel narrower first: an adopted window ignores a resize to the
+      // size it already believes it has, and keeps painting its old content.
+      SetWindowPos(hwnd, 0n, rect.x, rect.y, Math.max(1, rect.width - 1), Math.max(1, rect.height - 1), SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
     SetWindowPos(hwnd, 0n, rect.x, rect.y, rect.width, rect.height, SWP_NOZORDER | SWP_NOACTIVATE);
     // Only a window that is gone counts as lost; a hidden one could never be found again.
     return IsWindow(hwnd);

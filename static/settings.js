@@ -6,10 +6,11 @@ const SHORTCUTS = [
   [['Ctrl', 'Alt', '→'], 'Focus the right pane in split layout'],
 ];
 
-function row(table, first, second) {
+function row(table, first, second, pathLike) {
   const tr = document.createElement('tr');
   const a = document.createElement('td');
   const b = document.createElement('td');
+  if (pathLike) b.className = 'path';
   if (typeof first === 'string') a.textContent = first;
   else a.append(first);
   if (typeof second === 'string') b.textContent = second;
@@ -40,11 +41,11 @@ window.desk.info().then((info) => {
     const dot = document.createElement('span');
     dot.className = 'state ' + p.state;
     name.append(dot, p.name);
-    row(profiles, name, p.dataDir);
+    row(profiles, name, p.dataDir, true);
   }
   const about = document.getElementById('about');
   row(about, 'Switchboard', `version ${info.version} on ${info.platform === 'darwin' ? 'macOS' : 'Windows'}`);
-  row(about, 'Claude desktop app', info.claudeExe || 'not found (set CLAUDE_DESK_APP)');
-  row(about, 'Profiles file', info.profilesFile);
+  row(about, 'Claude desktop app', info.claudeExe || 'not found (set CLAUDE_DESK_APP)', true);
+  row(about, 'Profiles file', info.profilesFile, true);
   row(about, 'Source', 'github.com/Dominent/claude-desk');
 });
