@@ -73,6 +73,8 @@ const selSendEvent = sel_registerName('sendEventWithOptions:timeout:error:');
 
 const fourcc = (code: string) => code.split('').reduce((n, c) => (n << 8) | c.charCodeAt(0), 0) >>> 0;
 const kGURL = fourcc('GURL');
+const kCoreEventClass = fourcc('aevt');
+const kAEReopenApplication = fourcc('rapp');
 const keyDirectObject = fourcc('----');
 const kAutoGenerateReturnID = -1;
 const kAnyTransactionID = 0;
@@ -180,6 +182,14 @@ export class MacHost implements WindowHost {
     const str = msgSendStr(NSString, selStringWithUTF8, url);
     msgSendParam(event, selSetParam, msgSendPtr(NSAppleEventDescriptor, selDescriptorWithString, str), keyDirectObject);
     return !!msgSendSend(event, selSendEvent, kAENoReply, kAEDefaultTimeout, null);
+  }
+
+  // What the Dock sends when its icon is clicked: an app whose last window
+  // was closed makes a new one. Used for an adopted instance without a window.
+  nudge(pid: number): boolean {
+    const target = msgSendPid(NSAppleEventDescriptor, selDescriptorWithPid, pid);
+    const event = msgSendEvent(NSAppleEventDescriptor, selAppleEvent, kCoreEventClass, kAEReopenApplication, target, kAutoGenerateReturnID, kAnyTransactionID);
+    return !!event && !!msgSendSend(event, selSendEvent, kAENoReply, kAEDefaultTimeout, null);
   }
 
   defaultUrlHandler(scheme: string): string | undefined {

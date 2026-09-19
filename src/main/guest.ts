@@ -129,7 +129,11 @@ export class Guest {
     this.poll = setInterval(() => {
       if (!this.pid) return this.clearPoll();
       const win = this.host.findWindow(this.pid);
-      if (!win && ++attempts % 8 === 0) console.log(`[desk] ${this.profile.id}: no window yet on pid ${this.pid}`);
+      if (!win && ++attempts % 8 === 0) {
+        console.log(`[desk] ${this.profile.id}: no window yet on pid ${this.pid}`);
+        // A running app whose window was closed needs the same nudge as a Dock click.
+        this.host.nudge?.(this.pid);
+      }
       if (win) {
         this.clearPoll();
         this.window = win;
