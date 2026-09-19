@@ -77,6 +77,18 @@ A profile made by hand (or by the `claude-profile` script) is picked up if its
 directory already exists. An instance that is already running on a profile is
 adopted rather than duplicated.
 
+## Icon
+
+`build/icon.png` is rendered from `build/icon.svg`:
+
+```bash
+./scripts/build-icon.sh
+```
+
+It needs `rsvg-convert` (`brew install librsvg`). Render it with a transparent
+background; a converter that flattens it leaves a white square behind the
+rounded corners in the Dock and the taskbar.
+
 ## Package
 
 ```bash
