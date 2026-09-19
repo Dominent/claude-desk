@@ -84,6 +84,7 @@ const selWithPid = sel_registerName('runningApplicationWithProcessIdentifier:');
 const selActivate = sel_registerName('activateWithOptions:');
 const selHide = sel_registerName('hide');
 const selUnhide = sel_registerName('unhide');
+const selIsActive = sel_registerName('isActive');
 
 function cfString(ref: unknown): string {
   const buf = Buffer.alloc(256);
@@ -170,6 +171,15 @@ export class MacHost implements WindowHost {
       CFRelease(p[0]);
       CFRelease(s[0]);
     }
+  }
+
+  inFront(pids: number[]): boolean {
+    const { BrowserWindow } = require('electron') as typeof import('electron');
+    if (BrowserWindow.getAllWindows().some((w) => w.isFocused())) return true;
+    return pids.some((pid) => {
+      const app = runningApp(pid);
+      return !!app && msgSend(app, selIsActive);
+    });
   }
 
   // Deliver a URL to one specific process, the way Launch Services would to

@@ -24,8 +24,10 @@ const SetWindowLongPtrW = user32.func('int64_t __stdcall SetWindowLongPtrW(uint6
 const SetWindowPos = user32.func('bool __stdcall SetWindowPos(uint64_t hwnd, uint64_t after, int x, int y, int w, int h, uint32_t flags)');
 const ShowWindow = user32.func('bool __stdcall ShowWindow(uint64_t hwnd, int cmd)');
 const SetForegroundWindow = user32.func('bool __stdcall SetForegroundWindow(uint64_t hwnd)');
+const GetForegroundWindow = user32.func('uint64_t __stdcall GetForegroundWindow()');
 
 const GW_HWNDNEXT = 2;
+const GW_OWNER = 4;
 const GWL_STYLE = -16;
 const GWL_EXSTYLE = -20;
 const GWLP_HWNDPARENT = -8;
@@ -112,6 +114,11 @@ export class WinHost implements WindowHost {
 
   hide(win: GuestWindow): void {
     ShowWindow(win as bigint, SW_HIDE);
+  }
+
+  inFront(): boolean {
+    const fg = GetForegroundWindow();
+    return !!fg && (fg === this.shell || GetWindow(fg, GW_OWNER) === this.shell);
   }
 
   raise(win: GuestWindow): void {

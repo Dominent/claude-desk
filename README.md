@@ -50,9 +50,17 @@ npm start
 
 Press `+`, type a profile name, and the app starts on a fresh directory with
 Claude's sign-in screen. Double-click or right-click a tab to rename it; the
-directory on disk keeps its original name. **Split** shows two profiles side by side; in split
-layout, clicking a tab fills the free half, or replaces the half that is not
-focused.
+directory on disk keeps its original name. **Split** shows two profiles side
+by side: the most recently used other tab fills the second half, and clicking
+a tab afterwards replaces the half that is not focused.
+
+Shortcuts, active only while Claude Desk or one of its instances is in front:
+
+| Keys | Action |
+| --- | --- |
+| Ctrl+1 … Ctrl+9 | Switch to tab 1 … 9 and give it the keyboard |
+| Ctrl+Tab / Ctrl+Shift+Tab | Next / previous tab |
+| Ctrl+Alt+Left / Right | Focus the left / right pane in split layout |
 
 Sign-in works per tab. While Claude Desk runs it owns the `claude://` scheme
 (and re-claims it whenever a freshly started instance grabs it back), so on

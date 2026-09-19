@@ -4,9 +4,10 @@ import * as path from 'node:path';
 import { findClaudeExecutable } from './claudeApp';
 import { DeepLinks, forwardUrlWindows } from './deeplink';
 import { guestRect, paneRects, TAB_BAR_HEIGHT, type Rect } from './geometry';
-import { Guest, type GuestInfo } from './guest';
+import { findGuestPid, Guest, type GuestInfo } from './guest';
 import { createHost, type WindowHost } from './host';
 import { ProfileStore, type Profile } from './profiles';
+import { Shortcuts } from './shortcuts';
 
 export type Layout = 'tabs' | 'split';
 
@@ -34,6 +35,8 @@ class Desk {
   private panes: string[] = [];
   private active?: string;
   private layout: Layout = 'tabs';
+  // Most recently focused first; decides what Split shows in the other half.
+  private recent: string[] = [];
   private exe = findClaudeExecutable();
   private layoutTimer?: NodeJS.Timeout;
   private stateFile = path.join(app.getPath('userData'), 'state.json');
@@ -65,6 +68,42 @@ class Desk {
     setInterval(() => {
       if (!this.host.ready()) this.broadcast();
     }, PERMISSION_POLL_MS);
+
+    new Shortcuts(
+      win,
+      {
+        tab: (i) => {
+          const id = [...this.guests.keys()][i];
+          if (id) this.activate(id);
+        },
+        next: () => this.step(1),
+        prev: () => this.step(-1),
+        pane: (side) => {
+          const id = this.panes[side === 'left' ? 0 : 1];
+          if (id) this.activate(id);
+        },
+      },
+      () => this.host.inFront([...this.guests.values()].map((g) => g.pid!).filter(Boolean)),
+    ).start();
+  }
+
+  // Instances already running on known profiles are taken over right away,
+  // hidden until their tab is picked, instead of lingering as loose windows.
+  adoptRunning(): void {
+    if (!this.host.ready() || !this.exe) return;
+    for (const g of this.guests.values()) {
+      if (g.state === 'stopped' && findGuestPid(g.profile.dataDir)) {
+        g.setVisible(false);
+        g.start();
+      }
+    }
+  }
+
+  private step(delta: number): void {
+    const ids = [...this.guests.keys()];
+    if (ids.length === 0) return;
+    const i = this.active ? ids.indexOf(this.active) : -1;
+    this.activate(ids[(i + delta + ids.length) % ids.length]);
   }
 
   state(): DeskState {
@@ -104,6 +143,16 @@ class Desk {
       for (const id of this.panes) if (id !== keep) this.guests.get(id)?.setVisible(false);
       this.panes = [keep];
     }
+    if (layout === 'split' && this.panes.length < MAX_PANES) {
+      // Fill the other half straight away with the tab used most recently.
+      const other = [...this.recent, ...this.guests.keys()].find((id) => !this.panes.includes(id) && this.guests.has(id));
+      const focused = this.active;
+      if (other) {
+        this.activate(other);
+        if (focused) this.activate(focused);
+        return;
+      }
+    }
     this.placePanes(true);
     this.raisePanes();
     this.remember();
@@ -134,6 +183,7 @@ class Desk {
       }
     }
     this.active = id;
+    this.recent = [id, ...this.recent.filter((r) => r !== id)].slice(0, 20);
     guest.setVisible(true);
     if (guest.state === 'stopped' || guest.state === 'error') guest.start();
     this.placePanes(true);
@@ -298,6 +348,7 @@ function createShell(): void {
   win.loadFile(path.join(app.getAppPath(), 'static', 'index.html')).then(() => {
     app.focus({ steal: true });
     desk.reopen();
+    desk.adoptRunning();
   });
 }
 

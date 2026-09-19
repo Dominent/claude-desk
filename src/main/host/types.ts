@@ -28,4 +28,6 @@ export interface WindowHost {
   focusShell?(): void;
   // Ask a running app that has no window to make one (macOS reopen event).
   nudge?(pid: number): boolean;
+  // Whether the shell or one of the given guests currently has the keyboard.
+  inFront(pids: number[]): boolean;
 }

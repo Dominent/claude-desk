@@ -10,7 +10,16 @@ const content = document.getElementById('content');
 
 let state = { guests: [], panes: [], active: undefined, layout: 'tabs', permission: true, claudeFound: true };
 
+let pendingRender = false;
+
 function render() {
+  // The first click of a double-click activates the tab and pushes new state;
+  // rebuilding the bar now would throw the editor away. Redraw when it closes.
+  if (tabList.querySelector('input.rename')) {
+    pendingRender = true;
+    return;
+  }
+  pendingRender = false;
   tabList.replaceChildren(
     ...state.guests.map((g) => {
       const tab = document.createElement('button');
@@ -83,7 +92,6 @@ function startRename(tab, label, g) {
     if (save && name && name !== g.name) {
       try {
         await window.desk.rename(g.id, name);
-        return;
       } catch (err) {
         console.warn(err);
       }
