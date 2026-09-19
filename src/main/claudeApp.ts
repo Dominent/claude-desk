@@ -45,7 +45,7 @@ function findMsixExecutable(env: NodeJS.ProcessEnv): string | undefined {
 }
 
 // The exe in HKCU\Software\Classes\claude\shell\open\command, when it is
-// Claude's own (Claude Desk overwrites the key while it runs).
+// Claude's own (Switchboard overwrites the key while it runs).
 export function registeredHandlerExe(command?: string): string | undefined {
   if (command === undefined) {
     try {

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme, screen } from 'electron';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { findClaudeExecutable } from './claudeApp';
@@ -223,6 +223,38 @@ class Desk {
     this.win.webContents.focus();
   }
 
+  // Read-only facts for the settings window.
+  info() {
+    return {
+      version: app.getVersion(),
+      platform: process.platform,
+      claudeExe: this.exe ?? null,
+      profilesFile: path.join(app.getPath('userData'), 'profiles.json'),
+      profiles: this.store.list().map((p) => ({ ...p, state: this.guests.get(p.id)?.state ?? 'stopped' })),
+    };
+  }
+
+  private settings?: BrowserWindow;
+
+  openSettings(): void {
+    if (this.settings && !this.settings.isDestroyed()) return this.settings.focus();
+    const dark = nativeTheme.shouldUseDarkColors;
+    this.settings = new BrowserWindow({
+      width: 560,
+      height: 620,
+      minWidth: 440,
+      minHeight: 400,
+      parent: this.win,
+      // The guests sit above the shell, so the settings window must float above them.
+      alwaysOnTop: true,
+      title: 'Switchboard Settings',
+      backgroundColor: dark ? '#141418' : '#f4f4f7',
+      webPreferences: { preload: path.join(__dirname, '..', 'preload.js'), contextIsolation: true, nodeIntegration: false },
+    });
+    this.settings.setMenuBarVisibility(false);
+    this.settings.loadFile(path.join(app.getAppPath(), 'static', 'settings.html'));
+  }
+
   // A claude:// URL (the sign-in callback) goes to the focused instance.
   deliverUrl(url: string): void {
     const guest = this.active ? this.guests.get(this.active) : undefined;
@@ -315,14 +347,35 @@ class Desk {
   }
 }
 
+const APP_NAME = 'Switchboard';
+
+// Profiles used to live under the old app name; carry them over once.
+function migrateUserData(): void {
+  const here = app.getPath('userData');
+  const old = path.join(path.dirname(here), 'claude-desk');
+  if (fs.existsSync(path.join(here, 'profiles.json')) || !fs.existsSync(old)) return;
+  fs.mkdirSync(here, { recursive: true });
+  for (const f of ['profiles.json', 'state.json']) {
+    if (fs.existsSync(path.join(old, f))) fs.copyFileSync(path.join(old, f), path.join(here, f));
+  }
+}
+
 function createShell(): void {
+  app.setName(APP_NAME);
+  migrateUserData();
+  const dark = nativeTheme.shouldUseDarkColors;
   const win = new BrowserWindow({
     width: 1280,
     height: 860,
     minWidth: 720,
     minHeight: 480,
-    title: 'Claude Desk',
-    backgroundColor: '#1f1f22',
+    title: APP_NAME,
+    backgroundColor: dark ? '#141418' : '#f4f4f7',
+    // The tab bar is the title bar, as in a browser.
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    trafficLightPosition: { x: 14, y: 12 },
+    titleBarOverlay: process.platform === 'win32' ? { color: dark ? '#141418' : '#f4f4f7', symbolColor: dark ? '#ececef' : '#1c1c21', height: TAB_BAR_HEIGHT } : undefined,
+    icon: path.join(app.getAppPath(), 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
@@ -330,6 +383,7 @@ function createShell(): void {
     },
   });
   win.setMenuBarVisibility(false);
+  if (process.platform === 'darwin' && !app.isPackaged) app.dock?.setIcon(path.join(app.getAppPath(), 'build', 'icon.png'));
   const desk = new Desk(win);
 
   ipcMain.handle('desk:state', () => desk.state());
@@ -341,6 +395,8 @@ function createShell(): void {
   ipcMain.handle('desk:layout', (_e, layout: Layout) => desk.setLayout(layout === 'split' ? 'split' : 'tabs'));
   ipcMain.handle('desk:permission', () => desk.requestPermission());
   ipcMain.handle('desk:focus-shell', () => desk.focusShell());
+  ipcMain.handle('desk:settings', () => desk.openSettings());
+  ipcMain.handle('desk:info', () => desk.info());
 
   deepLinks = new DeepLinks((url) => desk.deliverUrl(url));
   deepLinks.install();
@@ -349,6 +405,7 @@ function createShell(): void {
     app.focus({ steal: true });
     desk.reopen();
     desk.adoptRunning();
+    if (process.env.CLAUDE_DESK_SETTINGS) desk.openSettings();
   });
 }
 

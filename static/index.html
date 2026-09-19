@@ -2,19 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'" />
-  <title>Claude Desk</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' data:" />
+  <title>Switchboard</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header id="tabs">
-    <div id="tab-list"></div>
+  <header id="bar">
+    <div id="tab-list" role="tablist"></div>
     <form id="add-form" hidden>
-      <input id="add-name" placeholder="profile name" autocomplete="off" maxlength="32" />
+      <input id="add-name" placeholder="New profile name" autocomplete="off" maxlength="32" />
     </form>
-    <button id="add" title="Add a profile">+</button>
+    <button id="add" class="icon" title="Add a profile (a separate Claude sign-in)" aria-label="Add a profile">
+      <svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
     <span class="spacer"></span>
-    <button id="split" title="Show two profiles side by side">Split</button>
+    <button id="settings" class="icon" title="Settings and shortcuts" aria-label="Settings">
+      <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg>
+    </button>
+    <div id="layout" class="segment" role="group" aria-label="Layout">
+      <button id="layout-tabs" class="icon" title="One tab at a time" aria-label="Tabs layout">
+        <svg viewBox="0 0 16 16" width="16" height="16"><rect x="2" y="3" width="12" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      </button>
+      <button id="layout-split" class="icon" title="Two tabs side by side" aria-label="Split layout">
+        <svg viewBox="0 0 16 16" width="16" height="16"><rect x="2" y="3" width="12" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 3v10" stroke="currentColor" stroke-width="1.6"/></svg>
+      </button>
+    </div>
   </header>
   <main id="content">
     <div id="notice" class="notice"></div>

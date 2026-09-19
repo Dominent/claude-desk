@@ -1,10 +1,12 @@
-appId: local.claude-desk
-productName: Claude Desk
+appId: dev.dominent.switchboard
+productName: Switchboard
+icon: build/icon.png
 directories:
   output: release
 files:
   - dist/**
   - static/**
+  - build/icon.png
   - package.json
 protocols:
   - name: Claude sign-in link

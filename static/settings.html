@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'" />
+  <title>Switchboard Settings</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body class="settings">
+  <main>
+    <section>
+      <h2>Shortcuts</h2>
+      <p class="hint">Active only while Switchboard or one of its Claude instances is in front. Other apps keep these keys.</p>
+      <table id="shortcuts"></table>
+    </section>
+    <section>
+      <h2>Profiles</h2>
+      <p class="hint">Each profile is a separate Claude sign-in with its own data folder. Renaming a tab never moves the folder.</p>
+      <table id="profiles"></table>
+    </section>
+    <section>
+      <h2>About</h2>
+      <table id="about"></table>
+    </section>
+  </main>
+  <script src="settings.js"></script>
+</body>
+</html>

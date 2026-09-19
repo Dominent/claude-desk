@@ -1,0 +1,25 @@
+body.settings { overflow: auto; user-select: text; }
+body.settings main { padding: 20px 24px 28px; max-width: 640px; }
+section + section { margin-top: 26px; }
+h2 { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+.hint { margin: 0 0 10px; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; }
+td { padding: 7px 0; border-top: 1px solid var(--bar-line); vertical-align: top; }
+tr:first-child td { border-top: 0; }
+td:first-child { width: 42%; color: var(--text); white-space: nowrap; }
+td:last-child { color: var(--muted); word-break: break-all; }
+kbd {
+  font: inherit;
+  font-size: 12px;
+  padding: 1px 6px;
+  border: 1px solid var(--bar-line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--text);
+  background: var(--tab-active);
+}
+kbd + kbd { margin-left: 3px; }
+.state { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+.state.running { background: var(--ok); }
+.state.starting { background: var(--warn); }
+.state.error { background: var(--bad); }

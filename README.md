@@ -1,12 +1,17 @@
-# Claude Desk
+<p align="center"><img src="build/icon.png" width="128" alt="Switchboard"></p>
 
-One window, several Claude accounts. Claude Desk runs the real Claude desktop
-app once per profile and shows each instance in a tab. Every tab is the full
-app, Code tab included, signed in to its own account.
+# Switchboard
+
+One window, several Claude accounts. Switchboard runs the real Claude desktop
+app once per profile and shows each instance in a tab, or two side by side.
+Every tab is the full app, Code tab included, signed in to its own account.
+
+Switchboard is an independent open-source tool and is not affiliated with
+Anthropic. It drives the Claude desktop app you already have installed.
 
 ## How it works
 
-Claude desktop is an Electron app and honours `--user-data-dir`. Claude Desk
+Claude desktop is an Electron app and honours `--user-data-dir`. Switchboard
 gives each profile its own directory (`Claude-<name>` next to the app's default
 one), starts the app on it, finds the window it creates and hosts that window
 in its frame.
@@ -21,7 +26,7 @@ can paper over:
   keyboard input. (Reparenting it as a child looked tidier and silently ate
   every key press.)
 - **macOS** has no supported way to put another process's window inside yours.
-  Claude Desk pins the active guest window over its content area with the
+  Switchboard pins the active guest window over its content area with the
   Accessibility API, hides the others, and re-pins on every move and resize.
   It looks and behaves like a tab, but it is a separate window, so it needs
   the Accessibility grant and can lag a frame during a fast drag.
@@ -34,7 +39,7 @@ compile and one codebase ships for both platforms.
 - The Claude desktop app installed in its default place (`/Applications` on
   macOS, the MSIX package or the Squirrel install on Windows). Set
   `CLAUDE_DESK_APP` to the executable to override.
-- macOS: Accessibility access for Claude Desk. The app prompts for it; during
+- macOS: Accessibility access for Switchboard. The app prompts for it; during
   development the grant goes to Electron itself.
 
 ## Use
@@ -54,7 +59,7 @@ directory on disk keeps its original name. **Split** shows two profiles side
 by side: the most recently used other tab fills the second half, and clicking
 a tab afterwards replaces the half that is not focused.
 
-Shortcuts, active only while Claude Desk or one of its instances is in front:
+Shortcuts, active only while Switchboard or one of its instances is in front:
 
 | Keys | Action |
 | --- | --- |
@@ -62,10 +67,10 @@ Shortcuts, active only while Claude Desk or one of its instances is in front:
 | Ctrl+Tab / Ctrl+Shift+Tab | Next / previous tab |
 | Ctrl+Alt+Left / Right | Focus the left / right pane in split layout |
 
-Sign-in works per tab. While Claude Desk runs it owns the `claude://` scheme
+Sign-in works per tab. While Switchboard runs it owns the `claude://` scheme
 (and re-claims it whenever a freshly started instance grabs it back), so on
 macOS each instance uses an in-process auth session whose callback cannot go
-astray, and on Windows the callback reaches Claude Desk, which hands it to the
+astray, and on Windows the callback reaches Switchboard, which hands it to the
 focused instance. The previous handler is restored on quit.
 
 A profile made by hand (or by the `claude-profile` script) is picked up if its
@@ -82,10 +87,10 @@ Produces a DMG on macOS and an NSIS installer on Windows under `release/`.
 
 ## Limits
 
-- Closing Claude Desk leaves the instances running as ordinary Claude
+- Closing Switchboard leaves the instances running as ordinary Claude
   windows. The next launch adopts them again. Use a tab's × to quit one.
 - Anthropic's updater still runs inside each instance. After an update the app
-  relaunches itself; Claude Desk follows the new process.
+  relaunches itself; Switchboard follows the new process.
 - The shared `~/.claude` directory (settings, memory, session history) is
   common to all profiles. Only the sign-in differs.
 - The Dock or taskbar shows one Claude icon per instance, as the OS sees them.

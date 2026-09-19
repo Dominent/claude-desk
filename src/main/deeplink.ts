@@ -10,7 +10,7 @@ const claim = () => app.setAsDefaultProtocolClient(SCHEME, ...handlerArgs);
 const isClaimed = () => app.isDefaultProtocolClient(SCHEME, ...handlerArgs);
 
 // The sign-in flow ends with a claude:// URL. With several Claude instances
-// running the OS delivers it to whichever it likes, so while Claude Desk runs
+// running the OS delivers it to whichever it likes, so while Switchboard runs
 // it owns the scheme and passes each URL to the instance the user is using.
 // On macOS the app notices it is not the handler and switches to an in-process
 // auth session, which needs no routing at all. The previous handler comes
@@ -54,7 +54,7 @@ export class DeepLinks {
       this.previousWinCommand = readWinCommand();
       claim();
       this.timer = setInterval(() => this.reclaim(), RECLAIM_MS);
-      // A second Claude Desk started by the OS to open a URL hands it to us and exits.
+      // A second Switchboard started by the OS to open a URL hands it to us and exits.
       app.on('second-instance', (_e, argv) => {
         const url = argv.find((a) => a.startsWith(`${SCHEME}://`));
         if (url) this.onUrl(url);
@@ -89,7 +89,7 @@ export function forwardUrlWindows(exe: string, dataDir: string, url: string): vo
 }
 
 function bundleId(): string {
-  return process.platform === 'darwin' ? (require('electron').app.name === 'Electron' ? 'com.github.Electron' : 'local.claude-desk') : '';
+  return process.platform === 'darwin' ? (require('electron').app.name === 'Electron' ? 'com.github.Electron' : 'dev.dominent.switchboard') : '';
 }
 
 const WIN_KEY = `HKCU\\Software\\Classes\\${SCHEME}\\shell\\open\\command`;

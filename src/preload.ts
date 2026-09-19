@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('desk', {
   setLayout: (layout: string) => ipcRenderer.invoke('desk:layout', layout),
   requestPermission: () => ipcRenderer.invoke('desk:permission'),
   focusShell: () => ipcRenderer.invoke('desk:focus-shell'),
+  openSettings: () => ipcRenderer.invoke('desk:settings'),
+  info: () => ipcRenderer.invoke('desk:info'),
   onState: (cb: (state: unknown) => void) => {
     ipcRenderer.on('desk:state', (_e, state) => cb(state));
   },

@@ -95,11 +95,17 @@ class Win32HotKeys {
   }
 
   register(): void {
-    for (let i = 1; i <= 9; i++) this.RegisterHotKey(this.hwnd, i, MOD_CONTROL | MOD_NOREPEAT, 0x30 + i);
-    this.RegisterHotKey(this.hwnd, ID_NEXT, MOD_CONTROL | MOD_NOREPEAT, VK_TAB);
-    this.RegisterHotKey(this.hwnd, ID_PREV, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_TAB);
-    this.RegisterHotKey(this.hwnd, ID_LEFT, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_LEFT);
-    this.RegisterHotKey(this.hwnd, ID_RIGHT, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_RIGHT);
+    const failed: string[] = [];
+    const reg = (id: number, mods: number, vk: number, label: string) => {
+      if (!this.RegisterHotKey(this.hwnd, id, mods | MOD_NOREPEAT, vk)) failed.push(label);
+    };
+    for (let i = 1; i <= 9; i++) reg(i, MOD_CONTROL, 0x30 + i, `Ctrl+${i}`);
+    reg(ID_NEXT, MOD_CONTROL, VK_TAB, 'Ctrl+Tab');
+    reg(ID_PREV, MOD_CONTROL | MOD_SHIFT, VK_TAB, 'Ctrl+Shift+Tab');
+    reg(ID_LEFT, MOD_CONTROL | MOD_ALT, VK_LEFT, 'Ctrl+Alt+Left');
+    reg(ID_RIGHT, MOD_CONTROL | MOD_ALT, VK_RIGHT, 'Ctrl+Alt+Right');
+    // Graphics utilities often hold Ctrl+Alt+arrows for screen rotation.
+    if (failed.length) console.log(`[desk] shortcuts taken by another app: ${failed.join(', ')}`);
   }
 
   unregister(): void {

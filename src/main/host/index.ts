@@ -11,5 +11,5 @@ export function createHost(): WindowHost {
     const { WinHost } = require('./win') as typeof import('./win');
     return new WinHost();
   }
-  throw new Error(`Claude Desk supports macOS and Windows, not ${process.platform}`);
+  throw new Error(`Switchboard supports macOS and Windows, not ${process.platform}`);
 }

@@ -117,8 +117,10 @@ export class WinHost implements WindowHost {
   }
 
   inFront(): boolean {
-    const fg = GetForegroundWindow();
-    return !!fg && (fg === this.shell || GetWindow(fg, GW_OWNER) === this.shell);
+    // koffi hands back a uint64 as a plain number when it fits, and the shell
+    // handle is a BigInt: compare as BigInt or the test is always false.
+    const fg = BigInt(GetForegroundWindow());
+    return !!fg && (fg === this.shell || BigInt(GetWindow(fg, GW_OWNER)) === this.shell);
   }
 
   raise(win: GuestWindow): void {
