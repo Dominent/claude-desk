@@ -65,10 +65,14 @@ function watcherScript(parentPid: number): string {
 
 const RESTART_MS = 5000;
 const REPEAT_WINDOW_MS = 3000;
+// A watcher that cannot run at all (no PowerShell, a policy that blocks it)
+// must not retry forever; sign-in through a link is then simply unavailable.
+const MAX_RESTARTS = 5;
 
 export class LinkWatcher {
   private child?: ChildProcess;
   private stopped = false;
+  private restarts = 0;
   private isNew = firstSighting(REPEAT_WINDOW_MS);
 
   constructor(private onUrl: (url: string) => void) {}
@@ -83,12 +87,20 @@ export class LinkWatcher {
     });
     this.child = child;
     readline.createInterface({ input: child.stdout! }).on('line', (line) => {
+      // A line that arrives at all means the watcher is working, whatever came before.
+      this.restarts = 0;
       const url = linkActivationUrl(line.trim());
       if (url && this.isNew(url)) this.onUrl(url);
     });
+    // Without this listener a failed spawn would take the whole app down.
+    child.on('error', (err) => console.warn(`[desk] sign-in link watcher could not start: ${err.message}`));
     child.on('exit', () => {
       this.child = undefined;
       if (this.stopped) return;
+      if (++this.restarts > MAX_RESTARTS) {
+        console.warn('[desk] sign-in link watcher keeps failing; giving up. Sign in with email instead.');
+        return;
+      }
       console.warn('[desk] sign-in link watcher stopped; restarting');
       setTimeout(() => this.start(), RESTART_MS);
     });
