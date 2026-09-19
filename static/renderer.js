@@ -77,7 +77,7 @@ function renderNotice() {
     p.textContent = 'Each tab is a full Claude desktop app with its own account.';
   } else if (active.state === 'starting') {
     h.textContent = `Starting ${active.name}…`;
-    p.textContent = 'Sign in to one profile at a time: the sign-in link opens in whichever instance is in front.';
+    p.textContent = 'The Claude window appears here in a moment.';
   } else if (active.state === 'error') {
     h.textContent = `${active.name} failed to start`;
     p.textContent = active.error || '';

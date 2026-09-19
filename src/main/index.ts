@@ -53,8 +53,9 @@ class Desk {
     win.on('restore', () => this.showPanes());
     win.on('show', () => this.showPanes());
     win.on('focus', () => {
-      // On macOS our window just came in front of the pinned guests; put them back on top.
-      if (process.platform === 'darwin') setTimeout(() => this.raisePanes(), 30);
+      // On macOS our window just came in front of the pinned guests; put them
+      // back on top. A guest whose window is still appearing needs a later pass.
+      if (process.platform === 'darwin') for (const ms of [30, 400, 1500]) setTimeout(() => this.raisePanes(), ms);
     });
     win.on('close', () => this.shutdown());
 
@@ -180,7 +181,11 @@ class Desk {
       const g = this.guests.get(profile.id);
       if (g && this.panes.includes(profile.id) && g.state === 'running') {
         this.placePanes(true);
-        if (profile.id === this.active) g.raise();
+        g.raise();
+        // The app is still settling its first window; one more raise lands after it has.
+        setTimeout(() => {
+          if (this.panes.includes(profile.id)) this.raisePanes();
+        }, 500);
       }
       this.broadcast();
     });
