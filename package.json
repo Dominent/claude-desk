@@ -1,0 +1,22 @@
+{
+  "name": "claude-desk",
+  "version": "0.1.0",
+  "description": "One window, several Claude desktop accounts: hosts a real Claude desktop instance per profile in tabs",
+  "main": "dist/main/index.js",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "test": "npm run build && node --test dist/test/",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "koffi": "^2.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'" />
+  <title>Claude Desk</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="tabs">
+    <div id="tab-list"></div>
+    <form id="add-form" hidden>
+      <input id="add-name" placeholder="profile name" autocomplete="off" maxlength="32" />
+    </form>
+    <button id="add" title="Add a profile">+</button>
+    <span class="spacer"></span>
+    <button id="split" title="Show two profiles side by side">Split</button>
+  </header>
+  <main id="content">
+    <div id="notice" class="notice"></div>
+  </main>
+  <script src="renderer.js"></script>
+</body>
+</html>

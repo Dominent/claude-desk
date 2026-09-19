@@ -1,0 +1,22 @@
+appId: local.claude-desk
+productName: Claude Desk
+directories:
+  output: release
+files:
+  - dist/**
+  - static/**
+  - package.json
+protocols:
+  - name: Claude sign-in link
+    schemes: [claude]
+asarUnpack:
+  - node_modules/koffi/**
+mac:
+  category: public.app-category.developer-tools
+  target: [dmg]
+  identity: null
+win:
+  target: [nsis]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
