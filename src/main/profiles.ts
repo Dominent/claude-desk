@@ -17,9 +17,13 @@ export function slug(name: string): string {
 // Each profile is a Claude user-data directory next to the app's own one, so a
 // profile made by hand (or by the claude-profile script) is picked up as-is.
 export function defaultDataDir(id: string, platform = process.platform, home = os.homedir()): string {
-  if (platform === 'darwin') return path.join(home, 'Library', 'Application Support', `Claude-${id}`);
-  if (platform === 'win32') return path.join(process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming'), `Claude-${id}`);
-  return path.join(process.env.XDG_CONFIG_HOME ?? path.join(home, '.config'), `Claude-${id}`);
+  if (platform === 'win32') {
+    const p = path.win32;
+    return p.join(process.env.APPDATA ?? p.join(home, 'AppData', 'Roaming'), `Claude-${id}`);
+  }
+  const p = path.posix;
+  if (platform === 'darwin') return p.join(home, 'Library', 'Application Support', `Claude-${id}`);
+  return p.join(process.env.XDG_CONFIG_HOME ?? p.join(home, '.config'), `Claude-${id}`);
 }
 
 export class ProfileStore {

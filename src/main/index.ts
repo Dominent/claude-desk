@@ -162,6 +162,11 @@ class Desk {
     this.host.requestPermission();
   }
 
+  focusShell(): void {
+    this.host.focusShell?.();
+    this.win.webContents.focus();
+  }
+
   // A claude:// URL (the sign-in callback) goes to the focused instance.
   deliverUrl(url: string): void {
     const guest = this.active ? this.guests.get(this.active) : undefined;
@@ -273,6 +278,7 @@ function createShell(): void {
   ipcMain.handle('desk:remove', (_e, id: string) => desk.remove(String(id)));
   ipcMain.handle('desk:layout', (_e, layout: Layout) => desk.setLayout(layout === 'split' ? 'split' : 'tabs'));
   ipcMain.handle('desk:permission', () => desk.requestPermission());
+  ipcMain.handle('desk:focus-shell', () => desk.focusShell());
 
   deepLinks = new DeepLinks((url) => desk.deliverUrl(url));
   deepLinks.install();

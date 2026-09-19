@@ -101,9 +101,13 @@ function renderNotice() {
 
 splitButton.addEventListener('click', () => window.desk.setLayout(state.layout === 'split' ? 'tabs' : 'split'));
 
-addButton.addEventListener('click', () => {
+// An embedded guest holds the keyboard; clicking our bar takes it back.
+document.getElementById('tabs').addEventListener('pointerdown', () => window.desk.focusShell());
+
+addButton.addEventListener('click', async () => {
   addForm.hidden = false;
   addName.value = '';
+  await window.desk.focusShell();
   addName.focus();
 });
 addName.addEventListener('blur', () => (addForm.hidden = true));

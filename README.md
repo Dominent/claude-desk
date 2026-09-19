@@ -35,6 +35,10 @@ compile and one codebase ships for both platforms.
 
 ## Use
 
+Node 20 or 22. Newer npm versions may skip Electron's install script; if
+`node_modules/electron/dist` is missing afterwards, run
+`node node_modules/electron/install.js`.
+
 ```bash
 npm install
 npm start
@@ -62,8 +66,6 @@ npm run dist
 ```
 
 Produces a DMG on macOS and an NSIS installer on Windows under `release/`.
-The Windows path is built from the platform documentation and community
-launchers and has not been run on a Windows machine yet.
 
 ## Limits
 

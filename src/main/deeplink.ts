@@ -1,7 +1,13 @@
 import { app } from 'electron';
 import { execFileSync, spawn } from 'node:child_process';
+import * as path from 'node:path';
 
 export const SCHEME = 'claude';
+
+// Under `electron .` the handler must name this app, or the OS launches a bare Electron.
+const handlerArgs: [string?, string[]?] = process.defaultApp ? [process.execPath, [path.resolve(process.argv[1])]] : [];
+const claim = () => app.setAsDefaultProtocolClient(SCHEME, ...handlerArgs);
+const isClaimed = () => app.isDefaultProtocolClient(SCHEME, ...handlerArgs);
 
 // The sign-in flow ends with a claude:// URL. With several Claude instances
 // running the OS delivers it to whichever it likes, so while Claude Desk runs
@@ -25,9 +31,9 @@ export class DeepLinks {
   reclaim(): void {
     if (process.platform === 'darwin') {
       const { MacHost } = require('./host/mac') as typeof import('./host/mac');
-      if (new MacHost().defaultUrlHandler(SCHEME) !== bundleId()) app.setAsDefaultProtocolClient(SCHEME);
+      if (new MacHost().defaultUrlHandler(SCHEME) !== bundleId()) claim();
     } else if (process.platform === 'win32') {
-      if (!app.isDefaultProtocolClient(SCHEME)) app.setAsDefaultProtocolClient(SCHEME);
+      if (!isClaimed()) claim();
     }
   }
 
@@ -40,13 +46,13 @@ export class DeepLinks {
         e.preventDefault();
         this.onUrl(url);
       });
-      app.setAsDefaultProtocolClient(SCHEME);
+      claim();
       this.timer = setInterval(() => this.reclaim(), RECLAIM_MS);
       return;
     }
     if (process.platform === 'win32') {
       this.previousWinCommand = readWinCommand();
-      app.setAsDefaultProtocolClient(SCHEME);
+      claim();
       this.timer = setInterval(() => this.reclaim(), RECLAIM_MS);
       // A second Claude Desk started by the OS to open a URL hands it to us and exits.
       app.on('second-instance', (_e, argv) => {
@@ -65,11 +71,11 @@ export class DeepLinks {
       const { MacHost } = require('./host/mac') as typeof import('./host/mac');
       const host = new MacHost();
       if (this.previousMac && this.previousMac !== bundleId()) host.setDefaultUrlHandler(SCHEME, this.previousMac);
-      else app.removeAsDefaultProtocolClient(SCHEME);
+      else app.removeAsDefaultProtocolClient(SCHEME, ...handlerArgs);
       return;
     }
     if (process.platform === 'win32') {
-      app.removeAsDefaultProtocolClient(SCHEME);
+      app.removeAsDefaultProtocolClient(SCHEME, ...handlerArgs);
       if (this.previousWinCommand) writeWinCommand(this.previousWinCommand);
     }
   }
@@ -90,7 +96,7 @@ const WIN_KEY = `HKCU\\Software\\Classes\\${SCHEME}\\shell\\open\\command`;
 
 function readWinCommand(): string | undefined {
   try {
-    const out = execFileSync('reg', ['query', WIN_KEY, '/ve'], { encoding: 'utf8' });
+    const out = execFileSync('reg', ['query', WIN_KEY, '/ve'], { encoding: 'utf8', windowsHide: true });
     const m = out.match(/REG_SZ\s+(.*)$/m);
     return m?.[1].trim();
   } catch {
@@ -100,7 +106,7 @@ function readWinCommand(): string | undefined {
 
 function writeWinCommand(command: string): void {
   try {
-    execFileSync('reg', ['add', WIN_KEY, '/ve', '/d', command, '/f'], { stdio: 'ignore' });
+    execFileSync('reg', ['add', WIN_KEY, '/ve', '/d', command, '/f'], { stdio: 'ignore', windowsHide: true });
   } catch {
     // leave the registry as the app rewrites it on its next start
   }

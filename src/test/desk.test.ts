@@ -5,7 +5,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { childRect, guestRect, paneRects, sameRect } from '../main/geometry';
 import { defaultDataDir, ProfileStore, slug } from '../main/profiles';
-import { compareVersionDirs } from '../main/claudeApp';
+import { compareVersionDirs, registeredHandlerExe } from '../main/claudeApp';
 
 test('guest rect sits below the tab bar', () => {
   assert.deepEqual(guestRect({ x: 100, y: 50, width: 800, height: 600 }, 40), { x: 100, y: 90, width: 800, height: 560 });
@@ -27,9 +27,15 @@ test('slug normalizes names', () => {
   assert.throws(() => slug('!!!'));
 });
 
-test('data directories sit next to the app default', () => {
+test('data directories sit next to the app default, in the platform\'s own path style', () => {
   assert.equal(defaultDataDir('work', 'darwin', '/Users/x'), '/Users/x/Library/Application Support/Claude-work');
-  assert.match(defaultDataDir('work', 'win32', 'C:\\Users\\x'), /Claude-work$/);
+  assert.match(defaultDataDir('work', 'win32', 'C:\\Users\\x'), /\\Claude-work$/);
+});
+
+test('the registered handler yields the Claude exe but not the shell', () => {
+  const claude = '(Default)    REG_SZ    "C:\\Program Files\\WindowsApps\\Claude_2.110.1.0_x64__pzs8sxrjxfjjc\\app\\Claude.exe" "%1"';
+  assert.equal(registeredHandlerExe(claude), 'C:\\Program Files\\WindowsApps\\Claude_2.110.1.0_x64__pzs8sxrjxfjjc\\app\\Claude.exe');
+  assert.equal(registeredHandlerExe('(Default)    REG_SZ    "C:\\Work\\claude-desk\\node_modules\\electron\\dist\\electron.exe" "%1"'), undefined);
 });
 
 test('profile store round-trips and rejects duplicates', () => {

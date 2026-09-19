@@ -5,11 +5,12 @@
   "main": "dist/main/index.js",
   "private": true,
   "license": "MIT",
+  "engines": { "node": ">=20 <23" },
   "repository": "github:Dominent/claude-desk",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && electron .",
-    "test": "npm run build && node --test dist/test/",
+    "test": "npm run build && node --test dist/test/desk.test.js",
     "dist": "npm run build && electron-builder"
   },
   "dependencies": {

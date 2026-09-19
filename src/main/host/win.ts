@@ -70,6 +70,8 @@ export class WinHost implements WindowHost {
     return undefined;
   }
 
+  // SetParent leaves WS_CHILD and WS_POPUP alone, so the styles are switched
+  // first, as the API documentation asks, in both directions.
   attach(win: GuestWindow): void {
     const hwnd = win as bigint;
     const style = BigInt(GetWindowLongPtrW(hwnd, GWL_STYLE));
@@ -80,11 +82,17 @@ export class WinHost implements WindowHost {
 
   detach(win: GuestWindow): void {
     const hwnd = win as bigint;
-    SetParent(hwnd, 0n);
     const style = BigInt(GetWindowLongPtrW(hwnd, GWL_STYLE));
-    SetWindowLongPtrW(hwnd, GWL_STYLE, (style & ~WS_CHILD) | WS_POPUP | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+    SetWindowLongPtrW(hwnd, GWL_STYLE, (style & ~WS_CHILD) | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+    SetParent(hwnd, 0n);
     SetWindowPos(hwnd, 0n, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
     ShowWindow(hwnd, SW_RESTORE);
+  }
+
+  // Reparenting joins the two processes' input queues, and raise() parks the
+  // keyboard in the guest. The tab bar asks for it back when clicked.
+  focusShell(): void {
+    SetFocus(this.shell);
   }
 
   // `rect` is already relative to the shell's client area and in physical pixels.

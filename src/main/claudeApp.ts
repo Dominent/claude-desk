@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -22,22 +23,42 @@ export function findClaudeExecutable(platform = process.platform, env = process.
   return undefined;
 }
 
-// Current builds ship as an MSIX package under WindowsApps. The directory
-// itself cannot be listed by a normal user, so try the known package name
-// pattern, then fall back to the App Execution Alias that Windows creates.
+// Current builds ship as an MSIX package under WindowsApps. That directory
+// cannot be listed by a normal user, but a known full path is reachable, so
+// ask where the package is: the claude:// handler the app registered, then
+// the package manager, then the App Execution Alias if one exists.
 function findMsixExecutable(env: NodeJS.ProcessEnv): string | undefined {
-  const apps = path.join(env.ProgramFiles ?? 'C:\\Program Files', 'WindowsApps');
+  const fromHandler = registeredHandlerExe();
+  if (fromHandler && fs.existsSync(fromHandler)) return fromHandler;
   try {
-    const dirs = fs.readdirSync(apps).filter((d) => /^Claude_.*__pzs8sxrjxfjjc$/.test(d));
-    for (const d of dirs.sort().reverse()) {
-      const exe = path.join(apps, d, 'app', 'Claude.exe');
-      if (fs.existsSync(exe)) return exe;
-    }
+    const location = execFileSync('powershell', ['-NoProfile', '-Command', '(Get-AppxPackage -Name Claude).InstallLocation'], {
+      encoding: 'utf8',
+      windowsHide: true,
+    }).trim();
+    const exe = path.join(location, 'app', 'Claude.exe');
+    if (location && fs.existsSync(exe)) return exe;
   } catch {
-    // listing WindowsApps is denied for normal users
+    // no package manager answer
   }
   const alias = path.join(env.LOCALAPPDATA ?? '', 'Microsoft', 'WindowsApps', 'Claude.exe');
   return fs.existsSync(alias) ? alias : undefined;
+}
+
+// The exe in HKCU\Software\Classes\claude\shell\open\command, when it is
+// Claude's own (Claude Desk overwrites the key while it runs).
+export function registeredHandlerExe(command?: string): string | undefined {
+  if (command === undefined) {
+    try {
+      command = execFileSync('reg', ['query', 'HKCU\\Software\\Classes\\claude\\shell\\open\\command', '/ve'], {
+        encoding: 'utf8',
+        windowsHide: true,
+      });
+    } catch {
+      return undefined;
+    }
+  }
+  const m = command.match(/"([^"]*\\Claude\.exe)"/i);
+  return m?.[1];
 }
 
 // Older Squirrel layout: <LOCALAPPDATA>\AnthropicClaude\app-<version>\claude.exe.

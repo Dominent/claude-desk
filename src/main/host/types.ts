@@ -24,4 +24,6 @@ export interface WindowHost {
   hide(win: GuestWindow, pid: number): void;
   // Bring it in front of the shell and give it keyboard focus.
   raise(win: GuestWindow, pid: number): void;
+  // Take keyboard focus back for the shell's own UI.
+  focusShell?(): void;
 }
